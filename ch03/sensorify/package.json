@@ -1,11 +1,19 @@
 {
-  "name": "sensorify",
-  "version": "0.1.1",
-  "description": "",
-  "main": "censortext",
-  "author": "Scott Moon",
-  "dependensies" : {},
-  "engines" : {
-  	"node" : "*"
-  }
+    "name": "sensorify-jiwonsis",
+    "version": "0.1.1",
+    "description": "",
+    "main": "censortext",
+    "author": "Scott Moon",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/jiwonsis/MEAN-book/tree/master/ch03/sensorify"
+    },
+    "keywords": [
+        "censor",
+        "words"
+    ],
+    "dependensies": {},
+    "engines": {
+        "node": "*"
+    }
 }
