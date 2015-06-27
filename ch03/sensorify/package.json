@@ -1,0 +1,11 @@
+{
+  "name": "sensorify",
+  "version": "0.1.1",
+  "description": "",
+  "main": "censortext",
+  "author": "Scott Moon",
+  "dependensies" : {},
+  "engines" : {
+  	"node" : "*"
+  }
+}
