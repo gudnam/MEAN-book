@@ -226,3 +226,103 @@ fs.readdirSync(path);
 // 객체의 반환 값은 문자열(string value)로 받을 수 있다.
 ```
 >>//참고// file_readdir.js ::: 콜백 체인을 구성해 디렉토리 구조 탐색 및 출력예제
+
+### 파일 삭제
+>데이터를 삭제하거나 파일 시스템의 사용공간을 늘리기 위한 목적으로 다음과 같은 기능이 쓰인다.
+```sh
+// 비동기식
+fs.unlink(path, callback);
+//동기식
+fs.unlinkSync(path);
+//
+//다음 코드는 비동기식으로 파일 삭제하는 방법
+fs.unlink('new.txt', function(err){
+    console.log(err ? "File Delete Failed" : "File Deleted");
+});
+```
+### 파일 잘라내기
+>파일 잘라내기는 파일 끝 위치를 현재보다 작게 만들어 파일 크기를 줄이는 것을 의미한다. 임시로그 테이터와 가이 중요도가 낮은 데이터 파일이 지속적으로 증가되는 경우, 파일 잘라내기가 필요하다. 파일을 잘라내려면 원하는 푀종 파일 크기를 전달해 아래 fs함수 중 하나를 호출 한다.
+```sh
+//비동기
+fs.truncate(path, len, callback);
+//동기
+fs.truncateSync(path, len);
+```
+>>파일을 잘라내기 성공 여부에 따라 true, false의 값을 반환.비동기식에서는 파일을 잘라내기시에 오류 발생 시 콜백 함수로 err값을 전달 받게 된다.
+다음 코드 조각은 new.txt 이름의 파일을 0바이트 크기로 잘라내는 과정이다.
+```sh
+fs.truncate('new.txt', function(err){
+    console.log(err ? "File Truncate Failed" : "File Truncated");
+});
+```
+### 디렉토리 추가와 삭제
+>가끔은 Node.js 어플리케이션 내에서 파일을 저장할 디렉토리 구조를 만들어야 할 경우가 있다. fs모듈은 필요 시 디렉토리를 추가하거나 삭제할 수 있는 기능을 제공한다.
+>>Node.js에서 디렉토리를 추가하려면 다음 fs 호출을 사용한다.
+```sh
+//비동기식
+fs.mkdir(path, [mode], callback);
+//동기식
+fs.mkdirSync(path, [mode]);
+//
+//path : 절대/상대 경로 지정
+//[mode] : 새로운 디렉토리의 접근 모드를 지정할 수 있다.
+//반환값 :  동기식에서는 성공여부에 따라 true, false로 반환된다.
+            비동기식에서는 생성 실패 시 콜백함수인 err값을 반환한다.
+```
+>>아래 코드는 순차 방식으로 서브 디렉토리 생성 방법이다.
+```sh
+//책에서는 rmdir로 디렉토리 지우기로 나와있다.
+fs.mkdir('./data/folderA/folderB/folderD', function(err){
+    fs.mkdir('./data/folderA/folderB', function(err){
+        fs.mkdir('./data/folderA/folderC/folderE', function(err){
+            fs.mkdir('./data/folderA/folderC', function(err){
+                 fs.mkdir('./data/folderA', function(err){
+                 });
+           }); 
+        });
+    });
+});
+```
+>>Node.js에서 디렉토리를 삭제하려면 절대 경로나 상대 경로를 사용해 아래 함수를 호출한다.
+```sh
+//비동기식
+fs.rmdir(path, callback);
+//동기식
+fs.rmdir(path)
+//path : 절대/상대 경로 지정
+//반환값 :  동기식에서는 성공여부에 따라 true, false로 반환된다.
+            비동기식에서는 생성 실패 시 콜백함수인 err값을 반환한다.
+```
+>>mkdir()함수와 같이 부모 디렉토리를 삭제하기 전에 대상 디렉토리를 삭제하도록 한다. 순차적으로 맨 밑 디렉토리부터 지워야 디렉토리가 성공적으로 지워질 수 있다.
+```sh
+fs.rmdir('./data/folderA/folderB/folderC', function(err){
+    fs.rmdir('./data/folderA/folderB', function(err){
+        fs.rmdir('./data/folderD', function(err){
+        });
+    });
+    fs.rmdir('./data/folderA/folderC', function(err){
+        fs.rmdir('./data/folderE', function(err){
+        });
+    });
+});
+```
+
+
+### 파일 이름과 디렉토리 이름을 변경
+>새로운 데이터를 생성하거나 이전 데이터를 저장, 사용자 변경 등을 위해 Node.js 어플리케이션 내에서 파일이나 폴더의 이름 변경이 필요한 경우가 있다. 파일이나 폴더 이름 변경을 위해선 아래 fs함수를 호출한다.
+```sh
+fs.rename(oldPath, newPath, callback); //비동기식
+fs.renameSync(oldPath, newPath); //동기식
+//oldPath : 현재 변경하고자하는 디렉토리 및 폴더 지정 (파일인 경우는 확장자까지)
+//newPath : 변경위치 및 파일명 지정
+//성공 여부의 따라 true, false값으로 반환
+//비동기식에서는 실패한 경우 에러 값과 함께 전달
+//
+//다음 식은 old.txt의 이름은 new.txt로 변경하고 testDir를 renameDir로 변경한다.
+fs.rename('old.txt', 'new.txt', function(err){
+    console.log(err ? "Rename Failed" : "File Renamed");
+});
+fs.rename('testDir', 'renameDir', function(err){
+    console.log(err ? "Rename Failed" : "File Renamed");
+});
+```
