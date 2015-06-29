@@ -31,7 +31,7 @@ var urlStr = 'http:// user.pass@host.com:80/resource/path/?query=string#hash';
 var urlObj = url.parse(urlStr, true, false);
 urlString = url.format(urlObj);
 ```
->>>>다음은 url.pase() 수행시 반환값이 URL값의 속성들이다.
+>>>>다음은 url.parse() 수행시 반환값이 URL값의 속성들이다.
 - href : 파싱할 URL 전체 문자열
 - protocol : 소문자 형태의 요청 프로토콜
 - host : 소문자 형태의 URL의 전체 host 부분, port정보를 포함
@@ -258,3 +258,13 @@ http.createServer(function (req, res){
 // 1.수신할 파일의 경로 정보 path사용 ...}).listen(path, [callback]);
 // 2. 이미 열린 파일 디스크립터인 handle 사용 ...}).listen(handle, [callback]);
 ```
+
+##Node.js에서 HTTP 클라이언트와 HTTP 서버를 구현
+예제를 통해 클라이언트/서버의 기본 개념을 알아 본 후 요청과 응답을 처리하는 방법을 다룬다.
+예제들은 오류 처리, 공격 대응과 같은 추가 기능에 대한 내용을 포함하지 않는다. 하지만 http 모듈을 사용해 일반적인 HTTP 요청을 처리하는데 필요한 기본 호름과 구조에 관한 유용한 내용을 제공한다.
+
+###정적 파일 제공
+HTTP 서버의 가장 기본적인 형태는  정적 파일(Static file)을 제공하는 것이다. Node.js에서 정적 파일을 제공하려면 우선 HTTP서버를 시작하고 포트를 수시한다. 요청 핸들러에 fs모듈을 통해 파일을 지역적으로 열고 응답에 파일 내용을 쓴다.
+
+- //참고//  http_server_static.js :: 기본 정적 파일 웹서버 구현 
+- //참고//  http_client_static.js :: 정적 파일을 가져오는 기본 웹 클라이언트
