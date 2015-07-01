@@ -350,5 +350,13 @@ cluster 모듈의 가치를 설명하는 가장 좋은 방법은 Node.js - HTTP 
     - cluster_client.js :: 서버에 체스를 위한 연속된 요청을 전솔할 HTTP 클라이언트
     - cluster_worker.js :: HTTP 서버를 구현하는 worker 프로세스
     
+#### 요약
+다중 프로세서가 있는 서버에서 Node.js의 성농을 최대한 끌어내려면 다른 프로세스에 작업을 분산해야 한다.
+- process 모듈로 시스템과 상호작용이 가능.
+- child_process 모듈을 통해 실질적으로 다른 프로세스에서 코드를 실행할 수 있다.
+- Cluster 모듈을 통해 HTTP 나 TCP 서버 클러스터를 생성 가능
+- child_process는 다른 프로세스에서 작업을 시작할 수 있도록 exec()/ececFile(),spawn(),fork() 함수를 제공
+- ChildProcess와 Worker객체는 부모와 자식 프로세스 사이에 통신이 가능하도록 IPC 채널을 제공
+    
 
 
