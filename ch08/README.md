@@ -295,3 +295,97 @@ function writeData(socket, data) {
 ```
 > //참고// socket_server.js :: 기본 TCP 소켓 서버 구현 (테스트 하실 경우에는 socket_server.js 실행하시고, socket_client.js를 실행하면 서로간의 주고 받는 데이터가 콘솔로 보일 것이다.)
 
+## TLS 서버와 TLS 클라이언트를 구현
+전송층 보안/보안 소켓층 (TLS/Transport Layer)은 인터넷에서 안전하게 통신할 수 있게 고안된 암호화 프로토콜이다. 통신하는 소켓 서버의 적합성 여부판단을 위해 세션 키와 함께 x509인증서를 사용한다. TLS는 두 가지 방식으로 보안을 유지한다.
+- 1. 장기간 사용하는 공개 키와 개인 키를 사용해 송/수신을 암호화를 위해 사용하는 세션 키를 교환.
+- 2. 인증 역할 수행. 의도적이지 않는 경로로 접근하는 중간자 (man-in-the-middle)공격 방어.
+
+>TLS를 사용하기 위해서는 TLS소켓 서버와 클라이언트 둘 다 개인키와 공개 인증서를 생성해야 한다.
+키를 생성하기 위한 다양한 방법 중에서 각각의 플렛폼에 맞는 OpenSSL 라이브러리를 사용하는 것이다.
+```sh
+//개인키를 생성하는 방법이다.
+openssl genras -out server.pem 2048
+//인증 서명된 요청 파일을 생성하는 방법이다.
+openssl req -new -key server.pem -out server.csr
+```
+주의사항
+    - 인증서 서명에 거친 요청 파일을 생성할 때 몇 가지 질문에 답해야 한다. 공통 이름 입력 칸에는 연결을 원하는 서버의 도메인 이름을 넣는다. 이름을 입력하지 않으면 인증이 되지 않는다. Subject Alternative Names(주제를 대체할 이름) 필드에는 추가적인 도메인 이름과 IP 주소를 넣는다.
+```sh
+//내부적인 목적이나 테스트 목적으로 자체 서명한 인증서를 생성방법이다.
+openssl x509 -req -days 365 -in server.csr -signkey server.pem -out server.crt
+```
+ 주의사항
+    - 자체 서명된 인증서를 테스트 목적이나 내부적 사용 목적으로는 사용할 수 있지만, 인터넷 상에 외부 웹서비스가 구현한 경우는 인증기관의 서명을 거친 인증서가 필요하다. 써드 파티 인증기관에 의해 서명된 인증서 생성을 위해서는 추가적인 단계가 필요하다.
+    
+---
+### TLS 소켓 클라이언트 생성
+TLS클라이언트 생성은 TCP소켓 클라이언트와 동일하지만 보안을 위해 추가된 사항이 있다.
+```sh
+var options = {
+    key : fs.readFileSync('test/keys/client.pem'),
+    cert : fs.readFileSync('test/keys/client.crt),
+    ca : fs.readFileSync('test/keys/server.crt)
+}
+```
+>cert, key, ca 설정을 통해 선택 사항을 정의한 후 net.connect()의 동작과 동일한 tls.connect(options, [responseCallback])를 호출 할 수 있다.
+>> TCP와 TLS 소켓의 유일한 차이점은 서버와 클라이언트가 암호화 되어 있다는 것이다.
+```sh
+var options = {
+    hostname: 'encrypted.mysite.com',
+    port: 8108,
+    path : '/',
+    method : 'get',
+    key: fs.readFileSync('test/keys/client.pem'),
+    cert: fs.readFileSync('test/keys/client.crt),
+    ca: fs.readFileSync('test/keys/server.crt)
+}
+var req = tls.connect(options, function(res) {
+    <handle the connection the same as a net.connect>
+});
+```
+>tls.connect()의 추가 선택 사항
+- pfx : 
+    - 개인 키, 인증서, 서버의 CA 인증 정보를 담고 있는 PFX나 PKCS12 포맷의 String또는 Buffer객체 (기본값 null)
+- key :
+    - SSL을 위해 사용할 개인 키를 포함한 String,Buffer객체
+- passphrase : 
+    - 개인키나 PFX를 위한 암호 구문을 포함한 String객체 (기본값 null)
+- cert : 
+    - 사용할 공개 x509인증서를 포함한 String,Buffer 객체
+- ca :
+     - 원격호스트 확인에 사용되는 신뢰할 수 있는 인증서의 PEM포맷 문자열이나 Buffer-Array
+- ciphers : 
+    - 사용하거나 제외할 암호를 설명하는 문자열
+- rejectUnauthorized : 
+    - 'true'인 경우, 서버 인증서가 제공된 CA목록에 있는것을 의미함. 인증에 실패하면 error이벤트 발생. 검증은 HTTP 요청을 보내기 전 연결 레벨에서 수행. 기본값 true, https.request() 옵션에서만 사용
+- crl :
+    - PEM으로 인코딩된 인증서 해지 목록의 문자열이나 리스트. https.createServer()에만 사용
+- secureProtocol :
+    - SSL 버전3를 강제로 사용하기 위해 SSLv3_method와 같은 SSL함수
+
+TLS 소켓 서버가 생성되면 요청/응답 처리리는 8장 초반에 다뤘던 TCP 소켓 서버의 동작과 기본적으로 동일하다. 서버는 연결을 수락하고 클라이언트에 데이터를 송/수신할 수 있다.
+
+>TLS 서버 객체의 추가 이벤트
+- secureConnection : 
+    - 새로운 안전 연결이 성공적으로 수립된 경우 발생한다.
+    - 콜백은 데이터를 쓰기/읽기가 가능한 tls.ClearTextStream 스트리밍 객체 인스턴스 하나를 받는다.
+    - function(clearStream){}
+- clientError :
+    - 클라이언트 연결 오류 발생 시 방출.
+    - error 와 tls.SecurePair 객체를 콜백의 전달인자로 받는다.
+    - function(error, securePair){}
+- newSession :
+    - 새로운 TLS 세션 생성 시 발생한다.
+    - 세션 정보를 포함하는 sessionId와 sessionData를 콜백의 전달인자로 받는다.
+    - function(sessionId, sessionData){}
+- resumeSession : 
+    - 클라이언트가 이전 TLS 세션을 재개하려는 경우 발생
+    - 세션을 외부 저장소에 저장해 이벤트 수신 시 확인할 수 있다.
+    - 핸들러는 sessionId와 세션이 수립되지 않는 경우 실행될 callback을 전달인자로 받는다.
+    - function(seesionId, callback){}
+
+---
+##요약
+소켓은 Node.js 어플리케이션에서 백엔드 서비스를 구현하는데 있어 굉장히 유용하다. 소켓을 사용해 IP주소와 포트만 가지고 간현히 서로 다른 시스템이 통신을 할 수 있다. 또한 동잉한 서버에서 실행중인 프로세스 간의 IPC에도 유용하게 사용할 수 있다.
+> net 모듈을 사용해 소켓 서버와 같이 동작하는 Server 객체를 생성할 수 있고, 소켓 클라이언트와 같이 동작하는데  Socket 객체도 생성 가능하다. 
+>> Socket 객체는 Duplex 스트림을 확장했기 때문에 서버와 클라이언트 둘 다 읽기/쓰기가 가능하다. >>> 안전한 연결을 위해서는 tls 모듈을 사용해 안전한 TLS 소켓 서버와 클라이언트를 구현한다. 
