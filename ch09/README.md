@@ -199,3 +199,43 @@ child_process.exec(command, [options], callback);
 > //참고// child_exec.js ::: 다른 프로세스 내에서 시스템 명령 실행
 
 
+### spawn()을 사용해 다른 Node.js 객체에서 프로세스를 생성
+Node.js 프로세스에서 새로운 프로세스를 추가를 위한 좀 더 복잡한 방법으로는 다른 프로세스를 스폰(spawn/산란)하는 방법이 있다. 스폰은 새로운 프로세스와 기존 프로세스간에 stdio, stdout, stderr 파이프를 만든 후 spawn() 함수를 사용해 새로운 프로세스의 파일을 실행한다. 이방식은 exec()을 이용하는 방법에 비해 무겁긴하지만 많은 장점을 가진다.
+
+>exec() / execFile() 과 spawn()의 차이점은,
+    - stdin 설정이 가능하다
+    - spstdout/stderr는 부모 프로세스의 Readable 스트림을 쓴다.
+    - > exec()/execFile()은 버퍼 출력을 읽기 전에 완료 되야하지만, spawn() 프로세스의 결과 데이트럴 쓰여지는 동시에 읽을 수도 있다.
+    
+spawn() 함수는 ChildProcess 객체를 반환하고 사용법은,
+```sh
+child_process.spawn(command, [args], [options]);
+//command : 실행될 명령을 지정하는 문자열
+//args : 실행 명령에 전달할 명령 행 전달인자 배열 지정
+//options : 현재 작업 디렉토리와 같이 , 명령 실행 시 사용할 설정을 지정하는 객체
+```
+callback 전달인자는 exec()/execFile()과 동일하다
+```sh
+// callback : (error, stdout, stderr)를 사용한다.
+//          : error : 실행 중 발생한 오류를 전달하는 error 객체를 받는다.
+//          : stdout , stderror 는 실행한 멍령의 결과 값을 포함한 Buffer객체
+```
+>spawn() 함수에서 'options'에서 사용할 수 있는 사항
+- cwd : 자식 프로세스 내에서 실행 할 현재 작업 디렉토리 지정
+- env : 환경 key/value 쌍으로, property:value를 지정하는 객체이다.
+- detached : 
+    - true로 설정하면, 자식 프로세스를 새로운 프로세스 그룹의 리더로 만들고 부모 프로세스 종료 시에도 프로세스가 지속되도록 허용한다.
+    - child.unref()를 같이 사용해 부모 프로세스가 자식 프로세스의 종료를 기다리지 않도록 만들어야 한다.
+- uid : 포식스(POSIX)프로세스의 프로세스 사용자 식별자를 지정한다.
+- gid : 포식스(POSIX)프로세스의 프로세스 그룹 식별자를 지정한다.
+- stdio :
+    - 자식 프로세스의 stdio 설정 ([stdin, stdout, stderr])를 정의한다.
+    - 기본설정 : Node.js[stdin, stdout, stderr]를 위해 파일 디스크립터 [0,1,2]를 연다.
+    - 문자열은 각 입/출력력 스트림 설정의 정의 한다.
+    - 예: ['ipc', 'icp', 'icp']
+    - 'pipe' : 자식과 부모 프로세스 사이에 파이프를 생성. 부모는 ChildProcess.stdio[fd]를 사용해 파이프에 접근 가능하다. fd는 [stdin, stdout, stderr]를 위한 파일 디스크립터 [0,1,2]이다.
+    - 'ipc' : 부모와 자식 프로세스 간에 메시지/파일 디스크립터를 전달하기 위한 IPC 채널을 생성한다. send()함수를 사용하여 전달한다.
+    - 'ignore' : 자식 프로세스에 파일 디스크립터를 설정하지 않는다.
+    - Stream : 부모 프로세스에 정의된 Readble/Writable 스트림 객체를 지정한다. 스트림의 파일 디스크립터는 자식 프로세스의 중복되기 때문에 부모나 자식 프로세스 간에 스트림이 가능하다.
+    - File descriptor integer : 사용할 파일 디스크립터의 정수 값을 지정한다.
+    - null, undefined : [stdin, stdout, stderr]값으로 기본 값 [0,1,2]를 사용한다.
