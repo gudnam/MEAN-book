@@ -239,3 +239,27 @@ callback 전달인자는 exec()/execFile()과 동일하다
     - Stream : 부모 프로세스에 정의된 Readble/Writable 스트림 객체를 지정한다. 스트림의 파일 디스크립터는 자식 프로세스의 중복되기 때문에 부모나 자식 프로세스 간에 스트림이 가능하다.
     - File descriptor integer : 사용할 파일 디스크립터의 정수 값을 지정한다.
     - null, undefined : [stdin, stdout, stderr]값으로 기본 값 [0,1,2]를 사용한다.
+
+### 자식 프로세스 포크 구현
+Node.js는 별도의 프로세서에서 수행 중인 다른 V8 인스턴스 내의 Node.js 모듈에서 실행되도록 디자인된, fork라는 특별한 프로세스 생성 방식을 제공한다. fork를 사용해 병력적으로 다중 서비스를 실행 할 수 있다. 새로운 V8 객체를 생성하는 데 시간이 소요되고 각 객체는 10MB 정도의 메모리를 차지한다. 그렇기 때문에 포크된 프로세스는 긴 시간 존재하고, 많은 수를 생성하지 않도록 해야한다. 특히 시스템 CPU보다 많은 수의 프로세스가 생성될 경우 성능 이점을 갖지 않는 것에 주의.
+
+>spawn과 다르게 자식 프로세스의 stdio는 설정이 불가능하다. 대신에 ChildProcess 객체의 send() 구조를 사용해 부모와 자식 프로세스 간 통신은 가능하다.
+
+ChildProcss를 반환하는 fork() 함수의 기본적인 사용법은,
+```sh
+child_process.fork(modulePath, [args], [options]);
+//modulePath : 새로운 Node.js 객체로 실행될 자바스크립트 파일의 경로를 지정하는 문자열이다.
+// args : node 명령에 전달될 명령 행 전달인자를 지정하는 배열이다.
+// options : 현재 작업 디렉토리와 같이 , 명령 실행 시 사용할 설정을 지정하는 객체
+//
+// callback : (error, stdout, stderr)를 사용한다.
+//          : error : 실행 중 발생한 오류를 전달하는 error 객체를 받는다.
+//          : stdout , stderror 는 실행한 멍령의 결과 값을 포함한 Buffer객체
+```
+>fork() 함수의 설정 가능 선택사항 
+- cwd : 자식 프로세스 내에서 실행 할 현재 작업 디렉토리 지정
+- env : 환경 key/value 쌍으로, property:value를 지정하는 객체이다.
+- encoding : 명령의 결과를 저장할 출력 버퍼에 사용되는 인코딩 형태를 지정
+- execPath : 스폰된 Node.js 프로세스를 생성하는 데 사용할 실행 파일을 지정. 다른 프로세스에 다른 버전의 Node.js 실행도 가능하지만, 프로세스의 기능이 다를 경우엔 비추천
+- slient : 'true'인 경우, 포크된 프로세스의 stdout/stderr 이 부모 프로세스와 연관되지 않는다 (기본값 : 'false')
+
