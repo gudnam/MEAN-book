@@ -263,3 +263,53 @@ child_process.fork(modulePath, [args], [options]);
 - execPath : 스폰된 Node.js 프로세스를 생성하는 데 사용할 실행 파일을 지정. 다른 프로세스에 다른 버전의 Node.js 실행도 가능하지만, 프로세스의 기능이 다를 경우엔 비추천
 - slient : 'true'인 경우, 포크된 프로세스의 stdout/stderr 이 부모 프로세스와 연관되지 않는다 (기본값 : 'false')
 
+## 프로세스 클러스터 구현
+Node.js를 사용한 가장 멋진 일 중에 하나는 분리된 프로세스로 병렬 실행이 가능한 Node.js 객체의 클러스터를 같은 장치 내에서 생성할 수 있는 것이다.
+>프로세스 클러스터는 바로 전에 배운 프로세스 포크와 TCP 서버를 사용해 메시지를 주고 받는 send(message, serverHandle) IPC 구조를 사용해 수행 가능하다.
+>> 노트
+- Node. v0.12.5에서도 아직까지도 Cluster 모듈은 Stability: 2 - Unstable 이다. 차후버전에서 문법이 변형 될 수도 있다.
+
+### cluster 모듈 사용
+cluster 모듈은 같은 하단에 있는 소켓을 활용한 동일한 IP 주소와 포트의 조합의 요청을 처리를 가능하게 하므로, 해당 모듈을 사용하면 같은 머신에서 동작중인 다른 프로세스의 TCP나 HTTP서버 클러스터 초기화와 모니터와 관련된 이벤트와 함수, 속성 값을 제공한다.
+>cluster 모듈이 생성하는 이벤트
+- fork
+    - 새로운 worker가 포크될 때 발생.
+    - callback(worker) : Worker인자값을 받는다
+- online
+    - 새로운 worker가 시작된 것을 알리는 메세지 전송 시 발생
+    - callback(worker) : Worker인자값을 받는다
+- listening
+    - worker가 listen()을 호출해 공유된 포트로 수신 시작 시 발생.
+    - callback(worker, address) : Worker가 수신중인 포트를 나타내는 address값과 Worker를 인자 값으로 받는다.
+- disconnect
+    - 서버가 worker.disconnect()를 호출 등으로 인해  IPC 채널 종료한 후 발생
+    - callback(worker) : Worker인자값을 받는다
+- exit
+    - Worker 객체 종료 시 발생
+    - callback(worker, code, signal)
+- setup
+    - 처음으로 setupMaster()가 호출된 시점에 발생
+
+---
+cluster 모듈에서 node가 worker인지, master인지 정보를 얻거나 포크된 프로세스를 설정하는 기능을 구현 시, 사용할 함수의 속성들이다.
+> cluster 모듈의 메소드와 속성
+- settings : 클러스터 설정에 사용하고 exec, args, silent 속성 값 포함.
+- isMaster : 현재 프로세스가 클러스터 마스터인경우 'true' 아니면, 'false'
+- isWorker : 현재 프로세스가 Worker 인경우 'true' 아니면, 'false'
+- setupMaster([settings]) :
+    - settings : exec,args,silent 속성의 정의된 객체 값
+    - exec : worker 자바스크립트 파일 지정
+    - args : 전달할 전달인자 배열
+    - silent :  worker 스레드에서 IPC메너니즘을 중단
+- disconnect([callback]) :
+    - worker의 IPC 메커니즘과 끊고 핸들을 종료한다. 
+    - callback 함수의 이벤트는 연결 끊고 실행이됨.
+- worker :
+    - worker 프로세스들 중 현재 Worker 객체를 참조.
+    - 마스터 프로세스에서는 정의되지 않는다.
+- workers :
+    - 마스터 프로세스의 ID를 참조할 수 있는 Worker 객체를 포함함.
+    - 예 : cluster.workers[workerId]
+    
+---
+
